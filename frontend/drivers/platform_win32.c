@@ -51,9 +51,32 @@
 #include "../../msg_hash.h"
 #include "platform_win32.h"
 
+#include "../../verbosity.h"
+
+/*
 #ifdef HAVE_NVDA
 #include "../../nvda_controller.h"
 #endif
+*/
+
+
+#ifdef HAVE_SAPI
+#define COBJMACROS
+#include <sapi.h>
+#include <ole2.h>
+#endif
+
+#ifdef HAVE_SAPI
+static ISpVoice* pVoice = NULL;
+#endif
+#ifdef HAVE_NVDA
+bool USE_POWERSHELL     = false;
+bool USE_NVDA           = true;
+#else
+bool USE_POWERSHELL     = true;
+bool USE_NVDA           = false;
+#endif
+bool USE_NVDA_BRAILLE   = false;
 
 #ifndef SM_SERVERR2
 #define SM_SERVERR2 89
@@ -67,11 +90,17 @@
 #ifdef HAVE_DYNAMIC
 static dylib_t dwmlib;
 static dylib_t shell32lib;
+static dylib_t nvdalib;
 #endif
 
 static char win32_cpu_model_name[64] = {0};
 
 VOID (WINAPI *DragAcceptFiles_func)(HWND, BOOL);
+
+long (*nvdaController_testIfRunning_func)(void);
+long (*nvdaController_cancelSpeech_func)(void);
+long (*nvdaController_brailleMessage_func)(wchar_t*);
+long (*nvdaController_speakText_func)(wchar_t*);
 
 static bool dwm_composition_disabled = false;
 static bool console_needs_free       = false;
@@ -414,6 +443,37 @@ static void frontend_win32_init(void *data)
          if (setDPIAwareProc)
             setDPIAwareProc();
 }
+
+#ifdef HAVE_NVDA
+static void init_nvda(void)
+{
+   RARCH_LOG("AAABBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB\n\n");
+#ifdef HAVE_DYNAMIC
+   if (USE_NVDA && !nvdalib)
+   {
+      RARCH_LOG("AAAAAAAAAAAAAAAAAAAAAAAAA\n");
+      nvdalib = dylib_load("nvdaControllerClient64.dll");
+      if (!nvdalib)
+      {
+         USE_NVDA = false;
+         USE_POWERSHELL = true;
+      }
+      else
+      {
+         nvdaController_testIfRunning_func = (long(*)(void))dylib_proc(nvdalib, "nvdaController_testIfRunning");
+         nvdaController_cancelSpeech_func = (long(*)(void))dylib_proc(nvdalib, "nvdaController_cancelSpeech");
+         nvdaController_brailleMessage_func = (long(*)(wchar_t*))dylib_proc(nvdalib, "nvdaController_brailleMessage");
+         nvdaController_speakText_func = (long(*)(wchar_t*))dylib_proc(nvdalib, "nvdaController_speakText");
+      }
+   }
+#else
+   USE_NVDA = false;
+   USE_POWERSHELL = true;
+#endif
+   RARCH_LOG("\n\n\n");
+   RARCH_LOG("USE_NVDA %d\n", USE_NVDA);
+}
+#endif
 
 enum frontend_powerstate frontend_win32_get_powerstate(int *seconds, int *percent)
 {
@@ -880,24 +940,6 @@ static bool create_win32_process(char* cmd)
    return true;
 }
 
-#ifdef HAVE_SAPI
-#define COBJMACROS
-#include <sapi.h>
-#include <ole2.h>
-#endif
-
-#ifdef HAVE_SAPI
-static ISpVoice* pVoice = NULL;
-#endif
-#ifdef HAVE_NVDA
-bool USE_POWERSHELL     = false;
-bool USE_NVDA           = true;
-#else
-bool USE_POWERSHELL     = true;
-bool USE_NVDA           = false;
-#endif
-bool USE_NVDA_BRAILLE   = false;
-
 static bool is_narrator_running_windows(void)
 {
    DWORD status = 0;
@@ -916,7 +958,10 @@ static bool is_narrator_running_windows(void)
 #ifdef HAVE_NVDA
    else if (USE_NVDA)
    {
-      long res = nvdaController_testIfRunning();
+      long res;
+
+      init_nvda();
+      res = nvdaController_testIfRunning_func();
 
       if (res != 0) 
       {
@@ -926,7 +971,7 @@ static bool is_narrator_running_windows(void)
          RARCH_LOG("Error communicating with NVDA\n");
          USE_POWERSHELL = true;
          USE_NVDA       = false;
-	     return false;
+	 return false;
       }
       return false;
    }
@@ -966,7 +1011,7 @@ static bool accessibility_speak_windows(int speed,
       if (is_narrator_running_windows())
          return true;
    }
-
+   RARCH_LOG("PS %d, NVDA %d\n", USE_POWERSHELL, USE_NVDA);
    if (USE_POWERSHELL)
    {
       if (strlen(language) > 0) 
@@ -988,10 +1033,16 @@ static bool accessibility_speak_windows(int speed,
 #ifdef HAVE_NVDA
    else if (USE_NVDA)
    {
-      long           res = nvdaController_testIfRunning();
-      const size_t cSize = strlen(speak_text) + 1;
-      wchar_t        *wc = malloc(sizeof(wchar_t) * cSize);
+      long           res;
+      const size_t cSize = strlen(speak_text)+1;
+      wchar_t        *wc;
+      RARCH_LOG("1\n");
+      res = nvdaController_testIfRunning_func();
+      RARCH_LOG("2\n");
+      wc = malloc(sizeof(wchar_t) * cSize);
 
+      init_nvda();
+      RARCH_LOG("GGGGG\n");
       mbstowcs(wc, speak_text, cSize);
 
       if (res != 0) 
@@ -1000,12 +1051,12 @@ static bool accessibility_speak_windows(int speed,
          return false;
       }
 
-      nvdaController_cancelSpeech();
+      nvdaController_cancelSpeech_func();
 
       if (USE_NVDA_BRAILLE)
-         nvdaController_brailleMessage(wc);
+         nvdaController_brailleMessage_func(wc);
       else
-         nvdaController_speakText(wc);
+         nvdaController_speakText_func(wc);
    }
 #endif
 #ifdef HAVE_SAPI
