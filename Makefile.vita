@@ -132,7 +132,8 @@ CXXFLAGS := $(CFLAGS) -fno-rtti -fno-exceptions
 VITA_LIBS := -lSceDisplay_stub -lSceGxm_stub -lSceNet_stub -lSceNetCtl_stub -lSceAppUtil_stub \
 	-lSceSysmodule_stub -lSceCtrl_stub -lSceHid_stub -lSceTouch_stub -lSceAudio_stub \
 	-lScePower_stub -lSceRtc_stub -lSceCommonDialog_stub -lScePgf_stub -lSceMotion_stub \
-	-lSceFiber_stub -lSceMotion_stub -lSceAppMgr_stub -lstdc++ -lpthread -lpng -lz -lSceShaccCg_stub
+	-lSceFiber_stub -lSceMotion_stub -lSceAppMgr_stub -lstdc++ -lpthread -lpng -lz -lSceShaccCg_stub \
+	-lmathneon -lvitaGL -lvitaShaRK
 
 LIBS	:= $(WHOLE_START) -lretro_vita $(WHOLE_END) $(VITA_LIBS) -lm -lc
 
@@ -165,13 +166,7 @@ all: $(TARGETS)
 
 %.depend: ;
 
-libSceShaccCg_stub.a: 
-	mkdir -p deps/vitaShaRK/SceShaccCg
-	vita-libs-gen deps/vitaShaRK/SceShaccCg.yml deps/vitaShaRK/SceShaccCg
-	make -C deps/vitaShaRK/SceShaccCg ARCH=arm-vita-eabi 
-	cp deps/vitaShaRK/SceShaccCg/libSceShaccCg_stub.a .
-
-$(TARGET).elf: $(OBJ) libretro_vita.a libSceShaccCg_stub.a
+$(TARGET).elf: $(OBJ) libretro_vita.a
 	$(LD) $(OBJ) $(LDFLAGS) $(LIBDIRS) $(LIBS) -o $@
 
 %.velf: %.elf
