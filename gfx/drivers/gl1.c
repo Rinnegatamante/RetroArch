@@ -284,7 +284,6 @@ static void *gl1_gfx_init(const video_info_t *video,
    {
       vglInitExtended(0x140000, full_x, full_y, RAM_THRESHOLD, SCE_GXM_MULTISAMPLE_4X);
       vglUseVram(GL_TRUE);
-      vglStartRendering();
       vgl_inited = true;
    }
 #endif
@@ -745,10 +744,6 @@ static bool gl1_gfx_frame(void *data, const void *frame,
          (frame_width < width && frame_height < height)*/)
       )
       draw = false;
-	  
-#ifdef VITA
-   do_swap = frame ? 1 : 0;
-#endif
 
    if (  gl1->video_width  != frame_width  ||
          gl1->video_height != frame_height ||
@@ -866,7 +861,6 @@ static bool gl1_gfx_frame(void *data, const void *frame,
 
    if (gl1->menu_texture_enable) {
 #ifdef VITA
-      do_swap = 1;
       glDisable(GL_SCISSOR_TEST);
       glDisable(GL_DEPTH_TEST);
       glDisable(GL_STENCIL_TEST);

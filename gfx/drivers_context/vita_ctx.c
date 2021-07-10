@@ -18,7 +18,9 @@
 
 #include "../../retroarch.h"
 
-uint8_t do_swap = 1;
+#ifdef VITA
+#include <vitaGL.h>
+#endif
 
 static void vita_swap_interval(void *data, int interval) { vglWaitVblankStart(interval); }
 
@@ -47,11 +49,7 @@ static void vita_check_window(void *data, bool *quit,
 
 static void vita_swap_buffers(void *data)
 {
-   if (do_swap) {	
-      vglStopRendering();
-      vglStartRendering();
-   }
-   do_swap = 1;
+   vglSwapBuffers(GL_FALSE);
 }
 
 static bool vita_set_video_mode(void *data,

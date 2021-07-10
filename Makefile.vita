@@ -133,7 +133,7 @@ VITA_LIBS := -lSceDisplay_stub -lSceGxm_stub -lSceNet_stub -lSceNetCtl_stub -lSc
 	-lSceSysmodule_stub -lSceCtrl_stub -lSceHid_stub -lSceTouch_stub -lSceAudio_stub \
 	-lScePower_stub -lSceRtc_stub -lSceCommonDialog_stub -lScePgf_stub -lSceMotion_stub \
 	-lSceFiber_stub -lSceMotion_stub -lSceAppMgr_stub -lstdc++ -lpthread -lpng -lz -lSceShaccCg_stub \
-	-lmathneon -lvitaGL -lvitaShaRK
+	-lmathneon -lvitaGL -lvitashark
 
 LIBS	:= $(WHOLE_START) -lretro_vita $(WHOLE_END) $(VITA_LIBS) -lm -lc
 
