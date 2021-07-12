@@ -19,6 +19,10 @@
 #include "../../retroarch.h"
 #include "../common/vita_common.h"
 
+#ifdef VITA
+#include <vitaGL.h>
+#endif
+
 static void vita_swap_interval(void *data, int interval)
 {
 #if defined(HAVE_VITAGLES)

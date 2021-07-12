@@ -24,6 +24,7 @@
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
 #include "../menu_setting.h"
+#include "../../input/input_remapping.h"
 
 #include "../../input/input_driver.h"
 
@@ -168,8 +169,8 @@ static int action_scan_input_desc(const char *path,
    {
       settings_t *settings = config_get_ptr();
       inp_desc_user        = atoi(label);
-      /* Skip 'Device Type' and 'Analog to Digital Type' */
-      key                  = (unsigned)(idx - 2);
+      /* Skip 'Device Type', 'Analog to Digital Type' and 'Mapped Port' */
+      key                  = (unsigned)(idx - 3);
       /* Select the reorderer bind */
       key                  =
             (key < RARCH_ANALOG_BIND_LIST_END) ? input_config_bind_order[key] : key;

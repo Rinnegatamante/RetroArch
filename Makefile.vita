@@ -5,7 +5,7 @@ GRIFFIN_BUILD        = 0
 WHOLE_ARCHIVE_LINK   = 0
 
 VITA_TITLE_ID	:= RETROARCH
-VITA_TITLE_NAME	:= RetroArch
+VITA_TITLE_NAME	:= Flycast
 
 PC_DEVELOPMENT_IP_ADDRESS  =
 PC_DEVELOPMENT_UDP_PORT	   =
@@ -13,7 +13,7 @@ PC_DEVELOPMENT_UDP_PORT	   =
 OBJ :=
 
 SCE_LIBC_SIZE := 4194304
-DEFINES := -DHAVE_ONLINE_UPDATER -DHAVE_UPDATE_ASSETS
+DEFINES := -DHAVE_ONLINE_UPDATER -DHAVE_UPDATE_ASSETS -DHAVE_STB_VORBIS
 INCDIRS :=
 
 ifeq ($(GRIFFIN_BUILD), 1)
@@ -54,8 +54,8 @@ else
       HAVE_GLSL := 1
       HAVE_SHADERPIPELINE := 1
    else
-      HAVE_VITA2D		:= 1
-      HAVE_VITAGL		:= 0
+      HAVE_VITA2D		:= 0
+      HAVE_VITAGL		:= 1
    endif
 	HAVE_NETWORKING		:= 1
 	HAVE_SOCKET_LEGACY	:= 1
@@ -113,16 +113,18 @@ LD      := $(CXX)
 LIBDIRS := -L.
 
 ARCHFLAGS := -march=armv7-a -mfpu=neon -mfloat-abi=hard -DVITA -DSCE_LIBC_SIZE=$(SCE_LIBC_SIZE)
-CFLAGS    += $(ARCHFLAGS) -mword-relocations -fno-optimize-sibling-calls -O2
+CFLAGS    += $(ARCHFLAGS) -mword-relocations -fno-optimize-sibling-calls
 
 ifeq ($(DEBUG), 1)
-   CFLAGS += -g
+   CFLAGS += -g -Og
+else
+   CFLAGS += -O2
 endif
 
 ASFLAGS := $(CFLAGS)
 LDFLAGS := -Wl,-q
 
-CFLAGS += -Wall -ffast-math -g
+CFLAGS += -Wall -ffast-math
 CFLAGS += -DRARCH_INTERNAL -DHAVE_SCREENSHOTS -DRARCH_CONSOLE
 CFLAGS += -DHAVE_DSP_FILTER
 CFLAGS += -DHAVE_VIDEO_FILTER
@@ -151,7 +153,7 @@ ifeq ($(HAVE_VITAGLES), 1)
    VITA_LIBS += -llibScePiglet_stub -ltaihen_stub
    FSELF_FLAGS := -ss
 else
-   VITA_LIBS += -lvitaGL -lvitashark
+   VITA_LIBS += -lmathneon -lvitaGL -lvitashark
    FSELF_FLAGS := -s
 endif
 
@@ -205,7 +207,13 @@ $(TARGET).elf: $(OBJ) libretro_vita.a liblibScePiglet_stub.a
 
 %.vpk: %.self
 	vita-mksfoex -s TITLE_ID=$(VITA_TITLE_ID) "$(VITA_TITLE_NAME)" -d ATTRIBUTE2=12 param.sfo
-	vita-pack-vpk -s param.sfo -b $< $@
+	vita-pack-vpk -s param.sfo -b $< \
+		--add vita/livearea/icon0.png=sce_sys/icon0.png \
+		--add vita/livearea/bg.png=sce_sys/livearea/contents/bg.png \
+		--add vita/livearea/startup.png=sce_sys/livearea/contents/startup.png \
+		--add vita/livearea/template.xml=sce_sys/livearea/contents/template.xml \
+		--add vita/livearea/smc.bin=smc.bin \
+		--add vita/livearea/smc2.bin=smc2.bin $@
 
 clean:
 	rm -f $(OBJ) $(TARGET).elf $(TARGET).elf.unstripped.elf $(TARGET).velf $(TARGET).self param.sfo $(TARGET).vpk 

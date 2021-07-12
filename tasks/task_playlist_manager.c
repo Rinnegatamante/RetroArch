@@ -474,17 +474,14 @@ static void pl_manager_validate_core_association(
    else
    {
       char core_display_name[PATH_MAX_LENGTH];
-      core_info_ctx_find_t core_info;
+      core_info_t *core_info = NULL;
       
       core_display_name[0] = '\0';
       
       /* Search core info */
-      core_info.inf  = NULL;
-      core_info.path = core_path;
-      
-      if (core_info_find(&core_info) &&
-          !string_is_empty(core_info.inf->display_name))
-         strlcpy(core_display_name, core_info.inf->display_name,
+      if (core_info_find(core_path, &core_info) &&
+          !string_is_empty(core_info->display_name))
+         strlcpy(core_display_name, core_info->display_name,
                sizeof(core_display_name));
       
       /* If core_display_name string is empty, it means the
@@ -608,43 +605,27 @@ static void task_pl_manager_clean_playlist_handler(retro_task_t *task)
          break;
       case PL_MANAGER_ITERATE_ENTRY_CHECK_DUPLICATE:
          {
-            const struct playlist_entry *entry = NULL;
-            bool entry_deleted                 = false;
+            bool entry_deleted = false;
+            size_t i;
             
             /* Update progress display */
             task_set_progress(task, (pl_manager->list_index * 100) / pl_manager->list_size);
             
-            /* Get current entry */
-            playlist_get_index(
-                  pl_manager->playlist, pl_manager->list_index, &entry);
-            
-            if (entry)
+            /* Check whether the content + core paths of the
+             * current entry match those of any subsequent
+             * entry */
+            for (i = pl_manager->list_index + 1; i < pl_manager->list_size; i++)
             {
-               size_t i;
-               
-               /* Loop over all subsequent entries, and check
-                * whether content + core paths are the same */
-               for (i = pl_manager->list_index + 1; i < pl_manager->list_size; i++)
+               if (playlist_index_entries_are_equal(pl_manager->playlist,
+                     pl_manager->list_index, i))
                {
-                  const struct playlist_entry *next_entry = NULL;
+                  /* Duplicate found - delete entry */
+                  playlist_delete_index(pl_manager->playlist, pl_manager->list_index);
+                  entry_deleted = true;
                   
-                  /* Get next entry */
-                  playlist_get_index(pl_manager->playlist, i, &next_entry);
-                  
-                  if (!next_entry)
-                     continue;
-                  
-                  if (playlist_entries_are_equal(
-                        entry, next_entry, &pl_manager->playlist_config))
-                  {
-                     /* Duplicate found - delete entry */
-                     playlist_delete_index(pl_manager->playlist, pl_manager->list_index);
-                     entry_deleted = true;
-                     
-                     /* Update list_size */
-                     pl_manager->list_size = playlist_size(pl_manager->playlist);
-                     break;
-                  }
+                  /* Update list_size */
+                  pl_manager->list_size = playlist_size(pl_manager->playlist);
+                  break;
                }
             }
             

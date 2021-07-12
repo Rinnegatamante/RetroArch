@@ -57,7 +57,7 @@
 #endif
 
 #ifdef VITA
-#include "../../defines/psp_defines.h"
+#include <defines/psp_defines.h>
 static bool vgl_inited = false;
 #endif
 
@@ -281,7 +281,7 @@ static void *gl1_gfx_init(const video_info_t *video,
 #ifdef VITA
    if (!vgl_inited)
    {
-      vglInitExtended(0x1400000, full_x, full_y, RAM_THRESHOLD, SCE_GXM_MULTISAMPLE_4X);
+      vglInitExtended(0x140000, full_x, full_y, RAM_THRESHOLD, SCE_GXM_MULTISAMPLE_4X);
       vglUseVram(GL_TRUE);
       vgl_inited = true;
    }
@@ -863,21 +863,20 @@ static bool gl1_gfx_frame(void *data, const void *frame,
       }
    }
 
-   if (gl1->menu_texture_enable){
+   if (gl1->menu_texture_enable) {
       do_swap = true;
 #ifdef VITA
-      glUseProgram(0);
-      bool enabled = glIsEnabled(GL_DEPTH_TEST);
-      if(enabled)
-         glDisable(GL_DEPTH_TEST);
+      glDisable(GL_SCISSOR_TEST);
+      glDisable(GL_DEPTH_TEST);
+      glDisable(GL_STENCIL_TEST);
 #endif
       menu_driver_frame(menu_is_alive, video_info);
 #ifdef VITA
-      if(enabled)
-         glEnable(GL_DEPTH_TEST);
+      glEnable(GL_SCISSOR_TEST);
+      glEnable(GL_DEPTH_TEST);
+      glEnable(GL_STENCIL_TEST);
 #endif
-   }
-   else
+   } else
 #endif
       if (video_info->statistics_show)
       {
@@ -973,8 +972,6 @@ static void gl1_gfx_set_nonblock_state(void *data, bool state,
 
    if (!gl1)
       return;
-
-   RARCH_LOG("[GL1]: VSync => %s\n", state ? "OFF" : "ON");
 
    gl1_context_bind_hw_render(gl1, false);
 
