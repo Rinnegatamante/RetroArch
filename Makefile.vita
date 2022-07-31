@@ -129,12 +129,11 @@ ifeq ($(WHOLE_ARCHIVE_LINK), 1)
 endif
 CXXFLAGS := $(CFLAGS) -fno-rtti -fno-exceptions
 
-VITA_LIBS := -lSceDisplay_stub -lSceGxm_stub -lSceNet_stub -lSceNetCtl_stub -lSceAppUtil_stub \
-	-lSceSysmodule_stub -lSceCtrl_stub -lSceHid_stub -lSceTouch_stub -lSceAudio_stub \
-	-lSceShaccCgExt -ltaihen_stub \
+VITA_LIBS := -lvitaGL -lvitashark -lmathneon -lSceDisplay_stub -lSceGxm_stub -lSceNet_stub \
+	-lSceNetCtl_stub -lSceAppUtil_stub -lSceSysmodule_stub -lSceCtrl_stub -lSceHid_stub -lSceTouch_stub -lSceAudio_stub \
+	-lSceShaccCgExt -ltaihen_stub -lSceKernelDmacMgr_stub \
 	-lScePower_stub -lSceRtc_stub -lSceCommonDialog_stub -lScePgf_stub -lSceMotion_stub \
-	-lSceFiber_stub -lSceMotion_stub -lSceAppMgr_stub -lstdc++ -lpthread -lpng -lz -lSceShaccCg_stub \
-	-lmathneon -lvitaGL -lvitashark -lSceKernelDmacMgr_stub
+	-lSceFiber_stub -lSceMotion_stub -lSceAppMgr_stub -lstdc++ -lpthread -lpng -lz -lSceShaccCg_stub
 
 LIBS	:= $(WHOLE_START) -lretro_vita $(WHOLE_END) $(VITA_LIBS) -lm -lc
 
