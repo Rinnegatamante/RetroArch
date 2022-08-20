@@ -1474,14 +1474,6 @@ ifeq ($(HAVE_PLAIN_DRM), 1)
    LIBS += -ldrm
 endif
 
-ifeq ($(HAVE_VITAGL), 1)
-   DEFINES += -DHAVE_OPENGL1 -DHAVE_VITAGL
-   OBJ += gfx/drivers/gl1.o \
-          gfx/drivers_font/gl1_raster_font.o \
-          gfx/drivers_context/vita_ctx.o \
-          gfx/drivers_display/gfx_display_gl1.o
-endif
-
 ifeq ($(HAVE_VITAGLES), 1)
    OBJ += gfx/drivers_context/vita_ctx.o
 endif
@@ -2442,9 +2434,6 @@ endif
 
 ifeq ($(HAVE_VITAGLES), 1)
    DEFINES += -DHAVE_VITAGLES
-   INCLUDE_DIRS += -I$(DEPS_DIR)/Pigs-In-A-Blanket/include
-   SOURCES := $(DEPS_DIR)/Pigs-In-A-Blanket/src
-   OBJ += $(patsubst %.c,%.o,$(foreach dir,$(SOURCES), $(wildcard $(dir)/*.c)))
 endif
 
 ifeq ($(HAVE_WEBOS), 1)

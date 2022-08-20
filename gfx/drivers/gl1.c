@@ -60,11 +60,6 @@
 #include "../video_thread_wrapper.h"
 #endif
 
-#ifdef VITA
-#include <defines/psp_defines.h>
-static bool vgl_inited = false;
-#endif
-
 static struct video_ortho gl1_default_ortho = {0, 1, 0, 1, -1, 1};
 
 /* Used for the last pass when rendering to the back buffer. */
@@ -291,14 +286,7 @@ static void *gl1_gfx_init(const video_info_t *video,
    full_y      = mode_height;
    mode_width  = 0;
    mode_height = 0;
-#ifdef VITA
-   if (!vgl_inited)
-   {
-      vglInitExtended(0x1400000, full_x, full_y, RAM_THRESHOLD, SCE_GXM_MULTISAMPLE_4X);
-      vglUseVram(GL_TRUE);
-      vgl_inited = true;
-   }
-#endif
+
    /* Clear out potential error flags in case we use cached context. */
    glGetError();
 
@@ -415,9 +403,7 @@ static void *gl1_gfx_init(const video_info_t *video,
    glDisable(GL_CULL_FACE);
    glDisable(GL_STENCIL_TEST);
    glDisable(GL_SCISSOR_TEST);
-#ifndef VITA
    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-#endif
    glGenTextures(1, &gl1->tex);
    glGenTextures(1, &gl1->menu_tex);
 
@@ -630,10 +616,8 @@ static void draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, int h
    /* Multi-texture not part of GL 1.1 */
    /*glActiveTexture(GL_TEXTURE0);*/
 
-#ifndef VITA
    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
    glPixelStorei(GL_UNPACK_ROW_LENGTH, pot_width);
-#endif
    glBindTexture(GL_TEXTURE_2D, tex);
 
    frame = (uint8_t*)frame_to_copy;
@@ -721,11 +705,9 @@ static void gl1_readback(
       unsigned fmt, unsigned type,
       void *src)
 {
-#ifndef VITA
    glPixelStorei(GL_PACK_ALIGNMENT, alignment);
    glPixelStorei(GL_PACK_ROW_LENGTH, 0);
    glReadBuffer(GL_BACK);
-#endif
    glReadPixels(gl1->vp.x, gl1->vp.y,
          gl1->vp.width, gl1->vp.height,
          (GLenum)fmt, (GLenum)type, (GLvoid*)src);
@@ -914,17 +896,7 @@ static bool gl1_gfx_frame(void *data, const void *frame,
 
    if (gl1->menu_texture_enable){
       do_swap = true;
-#ifdef VITA
-      glUseProgram(0);
-      bool enabled = glIsEnabled(GL_DEPTH_TEST);
-      if(enabled)
-         glDisable(GL_DEPTH_TEST);
-#endif
       menu_driver_frame(menu_is_alive, video_info);
-#ifdef VITA
-      if(enabled)
-         glEnable(GL_DEPTH_TEST);
-#endif
    }
    else
 #endif
@@ -1346,10 +1318,8 @@ static void gl1_load_texture_data(
 
    gl1_bind_texture(id, wrap, mag_filter, min_filter);
 
-#ifndef VITA
    glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-#endif
 
    glTexImage2D(GL_TEXTURE_2D,
          0,

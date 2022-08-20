@@ -23,13 +23,7 @@ static void vita_swap_interval(void *data, int interval)
 {
 #if defined(HAVE_VITAGLES)
    vita_ctx_data_t *ctx_vita = (vita_ctx_data_t *)data;
-#ifdef HAVE_EGL
-   egl_set_swap_interval(&ctx_vita->egl, interval);
-#endif
-#endif
-
-#if defined(HAVE_VITAGL)
-  vglWaitVblankStart(interval);
+   eglSwapInterval(0, interval);
 #endif
 }
 
@@ -60,14 +54,8 @@ static void vita_swap_buffers(void *data)
 {
 #if defined(HAVE_VITAGLES)
    vita_ctx_data_t *ctx_vita = (vita_ctx_data_t *)data;
-
-#ifdef HAVE_EGL
-   egl_swap_buffers(&ctx_vita->egl);
-#endif
-#endif
-
-#if defined(HAVE_VITAGL)
-   vglSwapBuffers(GL_FALSE);
+   
+   vglSwapBuffers(GL_TRUE);
 #endif
 }
 
@@ -78,9 +66,6 @@ static void vita_destroy(void *data)
 
   if (ctx_vita)
   {
-#ifdef HAVE_EGL
-     egl_destroy(&ctx_vita->egl);
-#endif
      ctx_vita->resize = false;
      free(ctx_vita);
   }
@@ -92,37 +77,18 @@ static bool vita_set_video_mode(void *data,
       bool fullscreen)
 {
 #if defined(HAVE_VITAGLES)
-  /* Create an EGL rendering context */
-   static const EGLint contextAttributeList[] = {
-      EGL_CONTEXT_CLIENT_VERSION, 2,
-      EGL_NONE
-   };
-
    vita_ctx_data_t *ctx_vita = (vita_ctx_data_t *)data;
 
    ctx_vita->width = ATTR_VITA_WIDTH;
    ctx_vita->height = ATTR_VITA_HEIGHT;
 
-   ctx_vita->native_window = VITA_WINDOW_960X544;
-
    ctx_vita->refresh_rate = 60;
-
-#ifdef HAVE_EGL
-   if (!egl_create_context(&ctx_vita->egl, contextAttributeList))
-      goto error;
-
-   if (!egl_create_surface(&ctx_vita->egl, ctx_vita->native_window))
-      goto error;
-#endif
 #endif
 
    return true;
 
 #if defined(HAVE_VITAGLES)
 error:
-#ifdef HAVE_EGL
-   egl_report_error();
-#endif
    vita_destroy(data);
 
    return false;
@@ -145,14 +111,6 @@ static enum gfx_ctx_api vita_get_api(void *data) { return GFX_CTX_OPENGL_ES_API;
 
 static bool vita_bind_api(void *data, enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
-#if defined(HAVE_VITAGLES)
-#ifdef HAVE_EGL
-   if (api == GFX_CTX_OPENGL_ES_API)
-          if (egl_bind_api(EGL_OPENGL_ES_API))
-            return true;
-#endif
-      return false;
-#endif
    return true;
 }
 
@@ -162,48 +120,13 @@ static void vita_bind_hw_render(void *data, bool enable)
 {
 #if defined(HAVE_VITAGLES)
    vita_ctx_data_t *ctx_vita = (vita_ctx_data_t *)data;
-
-#ifdef HAVE_EGL
-   egl_bind_hw_render(&ctx_vita->egl, enable);
-#endif
 #endif
 }
 
 static void *vita_init(void *video_driver)
 {
 #if defined(HAVE_VITAGLES)
-   EGLint n;
-   EGLint major, minor;
-   static const EGLint attribs[] = {
-#if 0
-      EGL_CONFIG_ID, 2,
-#else
-      EGL_RED_SIZE, 8,
-      EGL_GREEN_SIZE, 8,
-      EGL_BLUE_SIZE, 8,
-      EGL_ALPHA_SIZE, 8,
-      EGL_DEPTH_SIZE, 32,
-      EGL_STENCIL_SIZE, 8,
-      EGL_SURFACE_TYPE, 5,
-      EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
-#endif
-      EGL_NONE
-   };
-
    vita_ctx_data_t *ctx_vita = (vita_ctx_data_t *)calloc(1, sizeof(*ctx_vita));
-
-   if (!ctx_vita)
-      return NULL;
-
-#ifdef HAVE_EGL
-    if (!egl_init_context(&ctx_vita->egl, EGL_NONE, EGL_DEFAULT_DISPLAY,
-                          &major, &minor, &n, attribs, NULL))
-    {
-       egl_report_error();
-       printf("[VITA]: EGL error: %d.\n", eglGetError());
-       goto error;
-    }
-#endif
 
    return ctx_vita;
 #else
@@ -243,9 +166,7 @@ static float vita_get_refresh_rate(void *data)
 static gfx_ctx_proc_t vita_get_proc_address(const char *symbol)
 {
    gfx_ctx_proc_t ptr_sym = NULL;
-#ifdef HAVE_EGL
-   ptr_sym = egl_get_proc_address(symbol);
-#endif
+   ptr_sym = vglGetProcAddress(symbol);
    return ptr_sym;
 }
 #endif

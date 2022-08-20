@@ -117,7 +117,7 @@ static const gfx_ctx_driver_t *gfx_ctx_gl_drivers[] = {
 #if defined(ORBIS)
    &orbis_ctx,
 #endif
-#if defined(HAVE_VITAGL) | defined(HAVE_VITAGLES)
+#if defined(HAVE_VITAGLES)
    &vita_ctx,
 #endif
 #if !defined(__PSL1GHT__) && defined(__PS3__)

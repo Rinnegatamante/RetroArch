@@ -1435,7 +1435,7 @@ static void gl2_renderchain_copy_frame(
 
       glUnmapBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE);
    }
-#elif defined(HAVE_OPENGLES)
+#elif defined(HAVE_OPENGLES) && !defined(HAVE_VITAGLES)
 #if defined(HAVE_EGL)
    if (chain->egl_images)
    {

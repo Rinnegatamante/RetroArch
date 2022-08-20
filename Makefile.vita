@@ -13,7 +13,6 @@ PC_DEVELOPMENT_UDP_PORT	   =
 
 OBJ :=
 
-SCE_LIBC_SIZE := 4194304
 DEFINES := -DHAVE_ONLINE_UPDATER -DHAVE_UPDATE_ASSETS -DHAVE_STB_VORBIS
 INCDIRS :=
 
@@ -63,17 +62,15 @@ else
 	HAVE_7ZIP		:= 1
    ifeq ($(HAVE_VITAGLES), 1)
 	HAVE_VITA2D		:= 0
-	HAVE_VITAGL		:= 0
 	HAVE_VITAGLES 		:= 1
 	HAVE_OPENGL 		:= 1
 	HAVE_OPENGLES 		:= 1
 	HAVE_OPENGLES2 		:= 1
-	HAVE_EGL 		:= 1
+	HAVE_EGL 		:= 0
 	HAVE_GLSL 		:= 1
 	HAVE_SHADERPIPELINE 	:= 1
    else
 	HAVE_VITA2D		:= 1
-	HAVE_VITAGL		:= 0
    endif
 	HAVE_NETWORKING		:= 1
 	HAVE_IFINFO		:= 1
@@ -134,9 +131,6 @@ LD      := $(CXX)
 LIBDIRS := -L.
 
 ARCHFLAGS := -march=armv7-a -mfpu=neon -mfloat-abi=hard -DVITA
-ifeq ($(HAVE_VITAGLES), 1)
-   ARCHFLAGS += -DSCE_LIBC_SIZE=$(SCE_LIBC_SIZE)
-endif
 
 CFLAGS    += $(ARCHFLAGS) -mword-relocations -fno-optimize-sibling-calls
 
@@ -175,10 +169,7 @@ VITA_LIBS := -lSceDisplay_stub -lSceGxm_stub -lSceNet_stub -lSceNetCtl_stub -lSc
 	-lSceFiber_stub -lSceMotion_stub -lSceAppMgr_stub -lpthread -lpng -lz -lSceShaccCg_stub
 
 ifeq ($(HAVE_VITAGLES), 1)
-   VITA_LIBS += -llibScePiglet_stub -ltaihen_stub
-   FSELF_FLAGS := -ss
-else
-   VITA_LIBS += -lvitaGL -lvitashark
+   VITA_LIBS += -lvitaGL -lvitashark -lmathneon -lSceShaccCgExt -ltaihen_stub -lSceKernelDmacMgr_stub
    FSELF_FLAGS := -s
 endif
 
@@ -221,13 +212,7 @@ all: $(TARGETS)
 
 %.depend: ;
 
-liblibScePiglet_stub.a:
-	mkdir -p deps/Pigs-In-A-Blanket/piglet_stub/libScePiglet
-	vita-libs-gen deps/Pigs-In-A-Blanket/piglet_stub/nids.yml deps/Pigs-In-A-Blanket/piglet_stub/libScePiglet
-	make -C deps/Pigs-In-A-Blanket/piglet_stub/libScePiglet ARCH=arm-vita-eabi
-	cp deps/Pigs-In-A-Blanket/piglet_stub/libScePiglet/liblibScePiglet_stub.a .
-
-$(TARGET).elf: $(OBJ) liblibScePiglet_stub.a
+$(TARGET).elf: $(OBJ)
 	$(LD) $(OBJ) $(LDFLAGS) $(LIBDIRS) $(LIBS) -o $@
 
 %.velf: %.elf
@@ -244,7 +229,6 @@ $(TARGET).elf: $(OBJ) liblibScePiglet_stub.a
 
 clean:
 	rm -f $(OBJ) $(TARGET).elf $(TARGET).elf.unstripped.elf $(TARGET).velf $(TARGET).self param.sfo $(TARGET).vpk 
-	rm -rf  deps/Pigs-In-A-Blanket/piglet_stub/libScePiglet
 	rm -f $(OBJ:.o=.depend)
 
 # Useful for developers
