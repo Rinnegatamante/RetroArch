@@ -1514,9 +1514,8 @@ ifeq ($(HAVE_PLAIN_DRM), 1)
 endif
 
 ifeq ($(HAVE_VITAGL), 1)
-   DEFINES += -DHAVE_OPENGL1 -DHAVE_VITAGL
-   OBJ += gfx/drivers/gl1.o \
-          gfx/drivers_context/vita_ctx.o
+   DEFINES += -DHAVE_VITAGL
+   OBJ += gfx/drivers_context/vita_ctx.o
 endif
 
 ifeq ($(HAVE_VITAGLES), 1)

@@ -230,6 +230,9 @@ bool gl_check_capability(enum gl_capability_enum enum_idx)
 #endif
          break;
       case GL_CAPS_UNPACK_ROW_LENGTH:
+#if defined(VITA)
+         return false;
+#endif
 #ifdef HAVE_OPENGLES
          if (major >= 3)
             return true;

@@ -16,11 +16,10 @@
 
 /* Vita context. */
 
-#include "../../deps/Pigs-In-A-Blanket/include/pib.h"
-#include "../../retroarch.h"
-#ifdef HAVE_EGL
-#include "../common/egl_common.h"
+#if defined(HAVE_VITAGL)
+#include <vitaGL.h>
 #endif
+#include "../../retroarch.h"
 
 #define ATTR_VITA_WIDTH 960
 #define ATTR_VITA_HEIGHT 544
@@ -46,7 +45,10 @@ static void vita_swap_interval(void *data, int interval)
 #endif
 
 #if defined(HAVE_VITAGL)
-  vglWaitVblankStart(interval);
+   if (interval)
+      vglWaitVblankStart(GL_TRUE);
+   else
+      vglWaitVblankStart(GL_FALSE);
 #endif
 }
 
@@ -90,17 +92,18 @@ static void vita_swap_buffers(void *data)
 
 static void vita_destroy(void *data)
 {
-#if defined(HAVE_VITAGLES)
-  vita_ctx_data_t *ctx_vita = (vita_ctx_data_t *)data;
+#if defined(HAVE_VITAGL) || defined(HAVE_VITAGLES)
+   vita_ctx_data_t *ctx_vita = (vita_ctx_data_t *)data;
 
-  if (ctx_vita)
-  {
+   if (ctx_vita)
+   {
 #ifdef HAVE_EGL
-     egl_destroy(&ctx_vita->egl);
+      egl_destroy(&ctx_vita->egl);
 #endif
-     ctx_vita->resize = false;
-     free(ctx_vita);
-  }
+
+      ctx_vita->resize = false;
+      free(ctx_vita);
+   }
 #endif
 }
 
@@ -108,6 +111,16 @@ static bool vita_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
+#if defined(HAVE_VITAGL)
+   vita_ctx_data_t *ctx_vita = (vita_ctx_data_t *)data;
+   ctx_vita->width           = ATTR_VITA_WIDTH;
+   ctx_vita->height          = ATTR_VITA_HEIGHT;
+   ctx_vita->native_window   = 0; /* DATA_VITA_WINDOW_960X544 */
+   ctx_vita->refresh_rate    = 60;
+
+   return true;
+#endif
+
 #if defined(HAVE_VITAGLES)
   /* Create an EGL rendering context */
    static const EGLint 
@@ -127,11 +140,8 @@ static bool vita_set_video_mode(void *data,
    if (!egl_create_surface(&ctx_vita->egl, ctx_vita->native_window))
       goto error;
 #endif
-#endif
-
    return true;
 
-#if defined(HAVE_VITAGLES)
 error:
 #ifdef HAVE_EGL
    egl_report_error();
@@ -147,7 +157,7 @@ static void vita_input_driver(void *data,
       const char *name,
       input_driver_t **input, void **input_data) 
 {
-#if defined(HAVE_VITAGLES)
+#if defined(HAVE_VITAGL) || defined(HAVE_VITAGLES)
     *input      = NULL;
     *input_data = NULL;
 #endif
@@ -158,6 +168,9 @@ static enum gfx_ctx_api vita_get_api(void *data) { return GFX_CTX_OPENGL_ES_API;
 
 static bool vita_bind_api(void *data, enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
+#if defined(HAVE_VITAGL)
+   return true;
+#endif
 #if defined(HAVE_VITAGLES)
 #ifdef HAVE_EGL
    if (api == GFX_CTX_OPENGL_ES_API)
@@ -175,15 +188,27 @@ static void vita_bind_hw_render(void *data, bool enable)
 {
 #if defined(HAVE_VITAGLES)
 #ifdef HAVE_EGL
+#ifdef HAVE_EGL
    vita_ctx_data_t *ctx_vita = (vita_ctx_data_t *)data;
    egl_bind_hw_render(&ctx_vita->egl, enable);
+#endif
 #endif
 #endif
 }
 
 static void *vita_init(void *video_driver)
 {
-#if defined(HAVE_VITAGLES)
+#if defined(HAVE_VITAGL)
+   vita_ctx_data_t *ctx_vita = (vita_ctx_data_t *)calloc(1, sizeof(*ctx_vita));
+
+   if (!ctx_vita)
+      return NULL;
+
+   vglInit(0);
+   vglWaitVblankStart(GL_TRUE);
+
+   return ctx_vita;
+#elif defined(HAVE_VITAGLES)
    EGLint n;
    EGLint major, minor;
    static const EGLint attribs[] = {
@@ -232,7 +257,7 @@ static uint32_t vita_get_flags(void *data)
 {
    uint32_t flags = 0;
 
-#if defined(HAVE_VITAGLES)
+#if defined(HAVE_VITAGL) || defined(HAVE_VITAGLES)
 #if defined(HAVE_GLSL)
    BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
 #endif
@@ -243,7 +268,7 @@ static uint32_t vita_get_flags(void *data)
 
 static void vita_set_flags(void *data, uint32_t flags) { }
 
-#if defined(HAVE_VITAGLES)
+#if defined(HAVE_VITAGL) || defined(HAVE_VITAGLES)
 static float vita_get_refresh_rate(void *data)
 {
    vita_ctx_data_t *ctx_vita = (vita_ctx_data_t *)data;
@@ -255,7 +280,7 @@ static bool vita_create_surface(void *data)
 {
 #ifdef HAVE_EGL
    vita_ctx_data_t *ctx_vita = (vita_ctx_data_t*)data;
-   return egl_create_surface(&ctx_vita->egl, ctx_vita->native_window);
+   return egl_create_surface(&ctx_vita->egl, (void*)(intptr_t)ctx_vita->native_window);
 #else
    return false;
 #endif
@@ -279,7 +304,7 @@ const gfx_ctx_driver_t vita_ctx = {
    vita_swap_interval,
    vita_set_video_mode,
    vita_get_video_size,
-#if defined(HAVE_VITAGLES)
+#if defined(HAVE_VITAGL) || defined(HAVE_VITAGLES)
    vita_get_refresh_rate,
 #else
    NULL, /* get_refresh_rate */

@@ -61,16 +61,18 @@ else
 	HAVE_RTGA		:= 1
 	HAVE_ZLIB		:= 1
 	HAVE_7ZIP		:= 1
-   ifeq ($(HAVE_VITAGLES), 1)
+   ifeq ($(HAVE_VITAGL), 1)
 	HAVE_VITA2D		:= 0
-	HAVE_VITAGL		:= 0
-	HAVE_VITAGLES 		:= 1
+	HAVE_VITAGLES 		:= 0
 	HAVE_OPENGL 		:= 1
 	HAVE_OPENGLES 		:= 1
 	HAVE_OPENGLES2 		:= 1
-	HAVE_EGL 		:= 1
 	HAVE_GLSL 		:= 1
+	HAVE_EGL 		:= 0
 	HAVE_SHADERPIPELINE 	:= 1
+    # optimizations
+	HAVE_TEXTURE_CACHE := 1
+	HAVE_SHADER_CACHE := 1
    else
 	HAVE_VITA2D		:= 1
 	HAVE_VITAGL		:= 0
@@ -103,6 +105,7 @@ else
 	HAVE_AUDIOMIXER 	:= 1
 	HAVE_RWAV       	:= 1
 	HAVE_CORE_INFO_CACHE    := 1
+	HAVE_FILE_LOGGER	:= 1
 
 	ifeq ($(DEBUG), 1)
 		HAVE_NETLOGGER	= 1
@@ -135,7 +138,7 @@ LD      := $(CXX)
 LIBDIRS := -L.
 
 ARCHFLAGS := -march=armv7-a -mfpu=neon -mfloat-abi=hard -DVITA
-ifeq ($(HAVE_VITAGLES), 1)
+ifeq ($(HAVE_VITAGL), 1)
    ARCHFLAGS += -DSCE_LIBC_SIZE=$(SCE_LIBC_SIZE)
 endif
 
@@ -148,6 +151,7 @@ else
 endif
 
 ASFLAGS := $(CFLAGS)
+
 LDFLAGS := -Wl,-q,--pic-veneer
 
 CFLAGS += -Wall
@@ -175,15 +179,15 @@ VITA_LIBS := -lSceDisplay_stub -lSceGxm_stub -lSceNet_stub -lSceNetCtl_stub -lSc
 	-lScePower_stub -lSceRtc_stub -lSceCommonDialog_stub -lScePgf_stub -lSceMotion_stub \
 	-lSceFiber_stub -lSceMotion_stub -lSceAppMgr_stub -lpthread -lpng -lz -lSceShaccCg_stub
 
-ifeq ($(HAVE_VITAGLES), 1)
-   VITA_LIBS += -llibScePiglet_stub -ltaihen_stub
+ifeq ($(HAVE_VITAGL), 1)
+   VITA_LIBS := -lvitaGL -lvitashark -lmathneon -lSceKernelDmacMgr_stub -lSceShaccCgExt -ltaihen_stub $(VITA_LIBS)
    FSELF_FLAGS := -ss
 else
-   VITA_LIBS += -lvitaGL -lvitashark
+   VITA_LIBS += -lvita2d
    FSELF_FLAGS := -s
 endif
 
-LIBS	:= $(WHOLE_START) 
+LIBS	:= $(WHOLE_START)
 
 ifeq ($(HAVE_STATIC_DUMMY),1)
   DEFINES += -DHAVE_STATIC_DUMMY
@@ -252,13 +256,7 @@ endif
 
 %.depend: ;
 
-liblibScePiglet_stub.a:
-	mkdir -p deps/Pigs-In-A-Blanket/piglet_stub/libScePiglet
-	vita-libs-gen deps/Pigs-In-A-Blanket/piglet_stub/nids.yml deps/Pigs-In-A-Blanket/piglet_stub/libScePiglet
-	make -C deps/Pigs-In-A-Blanket/piglet_stub/libScePiglet ARCH=arm-vita-eabi
-	cp deps/Pigs-In-A-Blanket/piglet_stub/libScePiglet/liblibScePiglet_stub.a .
-
-$(TARGET).elf: $(OBJ) liblibScePiglet_stub.a
+$(TARGET).elf: $(OBJ)
 	@$(if $(Q), $(shell echo echo LD $@),)
 	$(Q)$(LD) $(OBJ) $(LDFLAGS) $(LIBDIRS) $(LIBS) -o $@
 
@@ -276,8 +274,7 @@ $(TARGET).elf: $(OBJ) liblibScePiglet_stub.a
 
 clean:
 	@$(if $(Q), echo $@,)
-	$(Q)rm -f $(OBJ) $(TARGET).elf $(TARGET).elf.unstripped.elf $(TARGET).velf $(TARGET).self param.sfo $(TARGET).vpk 
-	$(Q)rm -rf  deps/Pigs-In-A-Blanket/piglet_stub/libScePiglet
+	$(Q)rm -f $(OBJ) $(TARGET).elf $(TARGET).elf.unstripped.elf $(TARGET).velf $(TARGET).self param.sfo $(TARGET).vpk
 	$(Q)rm -f $(OBJ:.o=.depend)
 
 # Useful for developers

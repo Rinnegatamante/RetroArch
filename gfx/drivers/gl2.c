@@ -516,6 +516,11 @@ static void gfx_display_gl2_draw(gfx_display_ctx_draw_t *draw,
    glViewport(draw->x, draw->y, draw->width, draw->height);
    glBindTexture(GL_TEXTURE_2D, (GLuint)draw->texture);
 
+#ifdef VITA
+   if (gl->shader && gl->shader->use)
+      gl->shader->use(gl, gl->shader_data, VIDEO_SHADER_STOCK_BLEND, true);
+#endif
+
    gl->shader->set_coords(gl->shader_data, draw->coords);
    gl->shader->set_mvp(gl->shader_data,
          draw->matrix_data ? (math_matrix_4x4*)draw->matrix_data
@@ -1136,7 +1141,11 @@ static unsigned gl2_get_alignment(unsigned pitch)
       return 2;
    if (pitch & 4)
       return 4;
+#ifdef VITA
+   return 4;
+#else
    return 8;
+#endif
 }
 
 static void gl2_shader_scale(gl2_t *gl,
@@ -2197,6 +2206,12 @@ error:
    glDisable(GL_DEPTH_TEST); \
    glDisable(GL_CULL_FACE); \
    glDisable(GL_DITHER)
+#ifdef VITA
+#undef gl2_renderchain_restore_default_state
+#define gl2_renderchain_restore_default_state(gl) \
+   glDisable(GL_DEPTH_TEST); \
+   glDisable(GL_CULL_FACE)
+#endif
 #else
 #define gl2_renderchain_restore_default_state(gl) \
    if (!(gl->flags & GL2_FLAG_CORE_CONTEXT_IN_USE)) \
@@ -2255,8 +2270,10 @@ static void gl2_renderchain_copy_frame(
    else
 #endif
    {
+      #ifndef VITA
       glPixelStorei(GL_UNPACK_ALIGNMENT,
             gl2_get_alignment(width * gl->base_size));
+      #endif
 
       /* Fallback for GLES devices without GL_BGRA_EXT. */
       if (gl->base_size == 4 && use_rgba)
