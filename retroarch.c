@@ -6223,10 +6223,32 @@ void emscripten_mainloop(void)
 #ifdef __cplusplus
 extern "C"
 #endif
+#ifdef __vita__
+char rom_path[1024];
+int ra_main(unsigned int argc, void *argv) {
+	char *_argv[2];
+	_argv[1] = rom_path;
+	return rarch_main(rom_path[0] ? 2 : 1, _argv, NULL);
+}
+int main(int argc, char **argv) {
+	if (argc > 1) {
+		strcpy(rom_path, argv[1]);
+	} else {
+		rom_path[0] = 0;
+	}
+
+	// We need a bigger stack to run some cores, so we create a new thread with a proper stack size
+	SceUID main_thread = sceKernelCreateThread("RetroArch", ra_main, 0x40, 0x800000, 0, 0, NULL);
+	if (main_thread >= 0)
+		sceKernelStartThread(main_thread, 0, NULL);
+	return sceKernelExitDeleteThread(0);
+}
+#else
 int main(int argc, char *argv[])
 {
    return rarch_main(argc, argv, NULL);
 }
+#endif
 #endif
 
 /* DYNAMIC LIBRETRO CORE  */
