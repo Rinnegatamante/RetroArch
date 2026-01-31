@@ -204,7 +204,7 @@ static void *vita_init(void *video_driver)
    if (!ctx_vita)
       return NULL;
 
-   vglInit(0);
+   vglInitExtended(0, 960, 544, 16 * 1024 * 1024, SCE_GXM_MULTISAMPLE_4X);
    vglWaitVblankStart(GL_TRUE);
 
    return ctx_vita;
