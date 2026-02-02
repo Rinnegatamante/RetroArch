@@ -45,10 +45,7 @@ static void vita_swap_interval(void *data, int interval)
 #endif
 
 #if defined(HAVE_VITAGL)
-   if (interval)
-      vglWaitVblankStart(GL_TRUE);
-   else
-      vglWaitVblankStart(GL_FALSE);
+   eglSwapInterval(NULL, interval);
 #endif
 }
 
@@ -324,6 +321,8 @@ const gfx_ctx_driver_t vita_ctx = {
    vita_input_driver,
 #if defined(HAVE_VITAGLES)
    egl_get_proc_address,
+#elif defined(HAVE_VITAGL)
+   vglGetProcAddress,
 #else
    NULL,
 #endif
