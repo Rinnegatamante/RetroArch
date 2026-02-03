@@ -3,7 +3,7 @@
 #include <defines/psp_defines.h>
 #include <psp2/kernel/sysmem.h>
 #include <psp2/kernel/threadmgr.h>
-
+#include <kubridge.h>
 
 int _newlib_heap_memblock;
 unsigned _newlib_heap_size;
@@ -38,11 +38,20 @@ void _init_vita_heap(void) {
 
 	int _newlib_vm_size = 0;
 	if (&_newlib_vm_size_user != NULL) {
-	  _newlib_vm_size = ALIGN(_newlib_vm_size_user, 0x100000);
-	  _newlib_vm_memblock = sceKernelAllocMemBlockForVM("code", _newlib_vm_size);
+		SceKernelAllocMemBlockKernelOpt opt;
+		memset(&opt, 0, sizeof(SceKernelAllocMemBlockKernelOpt));
+		opt.size = sizeof(SceKernelAllocMemBlockKernelOpt);
+		opt.attr = 0x1;
+		opt.field_C = 0xA8000000;
+		_newlib_vm_size = ALIGN(_newlib_vm_size_user, 0x100000);
+		_newlib_vm_memblock = kuKernelAllocMemBlock("rx_block", SCE_KERNEL_MEMBLOCK_TYPE_USER_RW, _newlib_vm_size, &opt);
 
-	  if (_newlib_vm_memblock < 0){
-	    //sceClibPrintf("sceKernelAllocMemBlockForVM failed\n");
+		if (_newlib_vm_memblock < 0) {
+			sceClibPrintf("Dynarec block allocation failed %x\n", _newlib_vm_memblock);
+		} else {
+			void *vm_addr;
+			sceKernelGetMemBlockBase(_newlib_vm_memblock, (void **)&vm_addr);
+			kuKernelMemProtect(vm_addr, _newlib_vm_size, KU_KERNEL_PROT_EXEC | KU_KERNEL_PROT_WRITE | KU_KERNEL_PROT_READ);
 		}
 	}else{
 		_newlib_vm_memblock = 0;
@@ -58,7 +67,7 @@ void _init_vita_heap(void) {
 	info.size = sizeof(SceKernelFreeMemorySizeInfo);
 	sceKernelGetFreeMemorySize(&info);
 
-   printf("sceKernelGetFreeMemorySize %x\n", info.size_user);
+	sceClibPrintf("sceKernelGetFreeMemorySize %x\n", info.size_user);
 
 	if (&_newlib_heap_size_user != NULL) {
 		_newlib_heap_size = _newlib_heap_size_user;
@@ -68,8 +77,9 @@ void _init_vita_heap(void) {
 
 	_newlib_heap_size -= _newlib_vm_size;
 
-	_newlib_heap_memblock = sceKernelAllocMemBlock("Newlib heap", 0x0c20d060, _newlib_heap_size, 0);
+	_newlib_heap_memblock = sceKernelAllocMemBlock("Newlib heap", SCE_KERNEL_MEMBLOCK_TYPE_USER_RW, _newlib_heap_size, 0);
 	if (_newlib_heap_memblock < 0) {
+		sceClibPrintf("Failed to alloc heap %x\n", _newlib_heap_memblock);
 		goto failure;
 	}
 	if (sceKernelGetMemBlockBase(_newlib_heap_memblock, (void**)&_newlib_heap_base) < 0) {
