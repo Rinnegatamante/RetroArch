@@ -69,13 +69,7 @@ void _init_vita_heap(void) {
 
 	sceClibPrintf("sceKernelGetFreeMemorySize %x\n", info.size_user);
 
-	if (&_newlib_heap_size_user != NULL) {
-		_newlib_heap_size = _newlib_heap_size_user;
-	}else{
-		_newlib_heap_size = info.size_user - RAM_THRESHOLD;
-	}
-
-	_newlib_heap_size -= _newlib_vm_size;
+	_newlib_heap_size = info.size_user - 24 * 1024 * 1024;
 
 	_newlib_heap_memblock = sceKernelAllocMemBlock("Newlib heap", SCE_KERNEL_MEMBLOCK_TYPE_USER_RW, _newlib_heap_size, 0);
 	if (_newlib_heap_memblock < 0) {
