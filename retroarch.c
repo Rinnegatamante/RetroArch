@@ -6224,13 +6224,19 @@ void emscripten_mainloop(void)
 extern "C"
 #endif
 #ifdef __vita__
+#include <vitasdk.h>
+#include <vitaGL.h>
 char rom_path[1024];
 int ra_main(unsigned int argc, void *argv) {
+	vglInitWithCustomThreshold(0, 960, 544, 12 * 1024 * 1024, 0, 0, 0, SCE_GXM_MULTISAMPLE_4X);
+	
 	char *_argv[2];
 	_argv[1] = rom_path;
 	return rarch_main(rom_path[0] ? 2 : 1, _argv, NULL);
 }
 int main(int argc, char **argv) {
+	sceSysmoduleLoadModule(SCE_SYSMODULE_RAZOR_CAPTURE);
+
 	if (argc > 1) {
 		strcpy(rom_path, argv[1]);
 	} else {
